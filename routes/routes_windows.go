@@ -40,7 +40,7 @@ func routeAdd(dst interface{}, gw net.IP, priority int, name string) error {
 		"if",
 		fmt.Sprintf("%d", ifIndex),
 	}
-	v, err := exec.Command("route.exe", args...).Output()
+	v, err := exec.Command("route.exe", args...).CombinedOutput()
 	if err != nil {
 		return fmt.Errorf("failed to add %s route to %s interface: %s: %s", dst, name, v, err)
 	}
@@ -60,7 +60,7 @@ func routeDel(dst interface{}, gw net.IP, priority int, name string) error {
 		"if",
 		fmt.Sprintf("%d", ifIndex),
 	}
-	v, err := exec.Command("route.exe", args...).Output()
+	v, err := exec.Command("route.exe", args...).CombinedOutput()
 	if err != nil {
 		return fmt.Errorf("failed to delete %s route from %s interface: %s: %s", dst, name, v, err)
 	}

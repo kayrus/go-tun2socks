@@ -35,7 +35,7 @@ func setInterface(name, addr, gw, mask string, mtu int, tun *tun.NativeTun) erro
 		fmt.Sprintf("mtu=%d", mtu),
 		"store=persistent",
 	}
-	v, err := exec.Command("netsh.exe", args...).Output()
+	v, err := exec.Command("netsh.exe", args...).CombinedOutput()
 	if err != nil {
 		return fmt.Errorf("failed to set MTU on %s interface: %s", name, err)
 	}
@@ -54,7 +54,7 @@ func setInterface(name, addr, gw, mask string, mtu int, tun *tun.NativeTun) erro
 		addrs[0].IP.String(),
 		net.IP(addrs[1].Mask).To4().String(),
 	}
-	v, err = exec.Command("netsh.exe", args...).Output()
+	v, err = exec.Command("netsh.exe", args...).CombinedOutput()
 	if err != nil {
 		return fmt.Errorf("failed to set tun interface: %s: %s", v, err)
 	}
