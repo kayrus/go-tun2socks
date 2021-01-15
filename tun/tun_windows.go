@@ -37,7 +37,7 @@ func setInterface(name, addr, gw, mask string, mtu int, tun *tun.NativeTun) erro
 	}
 	v, err := exec.Command("netsh.exe", args...).CombinedOutput()
 	if err != nil {
-		return fmt.Errorf("failed to set MTU on %s interface: %s", name, err)
+		return fmt.Errorf("failed to set MTU on %s interface: %s: %s: %s", name, args, v, err)
 	}
 
 	addrs, err := routes.ParseAddresses(addr, gw, mask)
@@ -56,7 +56,7 @@ func setInterface(name, addr, gw, mask string, mtu int, tun *tun.NativeTun) erro
 	}
 	v, err = exec.Command("netsh.exe", args...).CombinedOutput()
 	if err != nil {
-		return fmt.Errorf("failed to set tun interface: %s: %s", v, err)
+		return fmt.Errorf("failed to set tun interface: %s: %s: %s", args, v, err)
 	}
 
 	return nil

@@ -14,17 +14,32 @@ func setInterface(name, addr, gw, mask string, mtu int, tun *tun.NativeTun) erro
 		return err
 	}
 
-	v, err := exec.Command("ifconfig", name, "mtu", fmt.Sprintf("%d", mtu)).CombinedOutput()
-	if err != nil {
-		return fmt.Errorf("failed to set MTU: %s: %s", v, err)
+	args := []string{
+		name,
+		"mtu",
+		fmt.Sprintf("%d", mtu),
 	}
-	v, err = exec.Command("ifconfig", name, "inet", addrs[0].String(), addrs[1].String()).CombinedOutput()
+	v, err := exec.Command("ifconfig", args...).CombinedOutput()
 	if err != nil {
-		return fmt.Errorf("failed to set ip addr: %s: %s", v, err)
+		return fmt.Errorf("failed to set MTU: %s: %s: %s", args, v, err)
 	}
-	v, err = exec.Command("ifconfig", name, "up").CombinedOutput()
+	args = []string{
+		name,
+		"inet",
+		addrs[0].String(),
+		addrs[1].String(),
+	}
+	v, err = exec.Command("ifconfig", args...).CombinedOutput()
 	if err != nil {
-		return fmt.Errorf("failed to bring up interface: %s: %s", v, err)
+		return fmt.Errorf("failed to set ip addr: %s: %s: %s", args, v, err)
+	}
+	        args = []string{
+                name,
+                "up",
+        }
+	v, err = exec.Command("ifconfig", args...).CombinedOutput()
+	if err != nil {
+		return fmt.Errorf("failed to bring up interface: %s: %s: %s", args, v, err)
 	}
 
 	return nil
