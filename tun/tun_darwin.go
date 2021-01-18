@@ -27,7 +27,7 @@ func setInterface(name, addr, gw, mask string, mtu int, tun *tun.NativeTun) erro
 		name,
 		"inet",
 		addrs[0].String(),
-		addrs[1].String(),
+		addrs[1].IP.String(),
 	}
 	v, err = exec.Command("ifconfig", args...).CombinedOutput()
 	if err != nil {
