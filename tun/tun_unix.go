@@ -1,3 +1,5 @@
+// +build darwin freebsd
+
 package tun
 
 import (

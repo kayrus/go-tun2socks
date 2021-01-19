@@ -218,6 +218,13 @@
     }
 #elif __unix // all unices not caught above
     // Unix
+    #include <sys/time.h>
+    u32_t sys_now(void)
+    {
+        struct timeval te;
+        gettimeofday(&te, NULL);
+        return te.tv_sec*1000LL + te.tv_usec/1000;
+    }
 #elif __posix
     // POSIX
 #endif

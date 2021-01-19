@@ -1,5 +1,4 @@
 GOCMD=go
-XGOCMD=xgo
 GOBUILD=$(GOCMD) build
 GOCLEAN=$(GOCMD) clean
 VERSION=$(shell git describe --tags)
@@ -10,16 +9,20 @@ BUILD_TAGS?=socks
 BUILDDIR=$(shell pwd)/build
 CMDDIR=$(shell pwd)/cmd/tun2socks
 PROGRAM=tun2socks
-GOOS:=$(shell go env GOOS)
+GOOS:=$(strip $(shell go env GOOS))
 
-ifeq "$(strip $(GOOS))" "windows"
+ifeq "$(GOOS)" "windows"
 SUFFIX=.exe
 endif
 
-BUILD_CMD="cd $(CMDDIR) && $(GOBUILD) -ldflags $(RELEASE_LDFLAGS) -o $(BUILDDIR)/$(PROGRAM)_$(GOOS)$(SUFFIX) -v -tags '$(BUILD_TAGS)'"
+ifeq "$(GOOS)" "freebsd"
+# customized vendor dir with a patch
+$(shell go mod vendor)
+$(shell patch -si freebsd.patch)
+GOBUILD := $(GOBUILD) -mod=vendor
+endif
 
-XBUILD_LINUX_CMD="cd $(BUILDDIR) && $(XGOCMD) -ldflags $(STATIC_RELEASE_LDFLAGS) -tags '$(BUILD_TAGS)' --targets=linux/* $(CMDDIR)"
-XBUILD_OTHERS_CMD="cd $(BUILDDIR) && $(XGOCMD) -ldflags $(RELEASE_LDFLAGS) -tags '$(BUILD_TAGS)' --targets=darwin/*,windows/*,android/*,ios/* $(CMDDIR)"
+BUILD_CMD="cd $(CMDDIR) && $(GOBUILD) -ldflags $(RELEASE_LDFLAGS) -o $(BUILDDIR)/$(PROGRAM)_$(GOOS)$(SUFFIX) -v -tags '$(BUILD_TAGS)'"
 
 .PHONY: build
 
