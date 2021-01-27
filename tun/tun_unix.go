@@ -26,7 +26,8 @@ func setInterface(name string, mtu int, tun *tun.NativeTun, routes []*net.IPNet)
 			name,
 			"inet",
 			r.String(),
-			"alias",
+			"127.0.0.1",
+			"add",
 		}
 		v, err = exec.Command("ifconfig", args...).CombinedOutput()
 		if err != nil {
