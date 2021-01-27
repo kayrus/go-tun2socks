@@ -24,7 +24,7 @@ func setInterface(name string, mtu int, tun *tun.NativeTun, routes []*net.IPNet)
 	for _, r := range routes {
 		args = []string{
 			name,
-			"inet",
+			"alias",
 			r.IP.String(),
 			net.IP(r.Mask).To4().String(),
 		}
