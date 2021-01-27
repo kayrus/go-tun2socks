@@ -21,13 +21,25 @@ func setInterface(name string, mtu int, tun *tun.NativeTun, routes []*net.IPNet)
 		return fmt.Errorf("failed to set MTU: %s: %s: %s", args, v, err)
 	}
 
+	args = []string{
+		name,
+		"inet",
+		"10.255.0.2/30",
+		"10.255.0.1",
+	}
+	v, err = exec.Command("ifconfig", args...).CombinedOutput()
+	if err != nil {
+		return fmt.Errorf("failed to set ip addr: %s: %s: %s", args, v, err)
+	}
+
 	for _, r := range routes {
 		args = []string{
 			name,
 			"inet",
 			r.String(),
-			r.IP.String(),
-			"add",
+			//"10.255.0.1",
+			//r.IP.String(),
+			"alias",
 		}
 		v, err = exec.Command("ifconfig", args...).CombinedOutput()
 		if err != nil {
