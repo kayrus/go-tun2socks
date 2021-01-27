@@ -43,7 +43,7 @@ func setInterface(name string, mtu int, tun *tun.NativeTun, routes []*net.IPNet)
 		args = []string{
 			"interface",
 			"ipv4",
-			"set",
+			"add",
 			"address",
 			"name=" + name,
 			"static",
