@@ -9,6 +9,12 @@ import (
 	"github.com/eycorsican/go-tun2socks/common/log"
 )
 
+// excludeList is used, when the 0.0.0.0/0 traffic is routed through the tunnel
+var excludeList = []string{
+	"0.0.0.0/8",
+	"127.0.0.0/8",
+}
+
 func splitFunc(c rune) bool {
 	return c == ',' || c == ' '
 }
@@ -75,6 +81,11 @@ func Get(routes, excludeRoutes string) ([]*net.IPNet, error) {
 		}
 		log.Debugf("excluding %s from routes", v)
 		res.RemoveNet(v)
+	}
+
+	for _, v := range excludeList {
+		_, cidr, _ := net.ParseCIDR(v)
+		res.RemoveNet(cidr)
 	}
 
 	return res.GetNetworks(), nil
