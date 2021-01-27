@@ -37,7 +37,7 @@ func setInterface(name string, mtu int, tun *tun.NativeTun, routes []*net.IPNet)
 			name,
 			"inet",
 			r.String(),
-			//"10.255.0.1",
+			"10.255.0.1",
 			//r.IP.String(),
 			"alias",
 		}
