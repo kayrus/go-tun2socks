@@ -46,7 +46,6 @@ func setInterface(name string, mtu int, tun *tun.NativeTun, routes []*net.IPNet)
 			"add",
 			"address",
 			"name=" + name,
-			"static",
 			r.IP.String(),
 			net.IP(r.Mask).To4().String(),
 		}
