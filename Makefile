@@ -18,7 +18,7 @@ endif
 ifeq "$(GOOS)" "freebsd"
 # customized vendor dir with a patch
 $(shell go mod vendor)
-$(shell patch -si freebsd.patch)
+$(shell patch -p1 -si freebsd.patch)
 GOBUILD := $(GOBUILD) -mod=vendor
 endif
 

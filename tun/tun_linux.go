@@ -2,13 +2,13 @@ package tun
 
 import (
 	"fmt"
+	"net"
 
-	"github.com/eycorsican/go-tun2socks/routes"
 	"github.com/vishvananda/netlink"
 	"golang.zx2c4.com/wireguard/tun"
 )
 
-func setInterface(name, addr, gw, mask string, mtu int, tun *tun.NativeTun) error {
+func setInterface(name string, mtu int, tun *tun.NativeTun, routes []*net.IPNet) error {
 	link, err := netlink.LinkByName(name)
 	if err != nil {
 		return fmt.Errorf("failed to detect %s interface: %s", name, err)
@@ -19,18 +19,14 @@ func setInterface(name, addr, gw, mask string, mtu int, tun *tun.NativeTun) erro
 		return fmt.Errorf("failed to set MTU on %s interface: %s", name, err)
 	}
 
-	addrs, err := routes.ParseAddresses(addr, gw, mask)
-	if err != nil {
-		return err
-	}
-
-	ipv4Addr := &netlink.Addr{
-		IPNet: addrs[0],
-		Peer:  addrs[1],
-	}
-	err = netlink.AddrAdd(link, ipv4Addr)
-	if err != nil {
-		return fmt.Errorf("failed to set peer address on %s interface: %s", name, err)
+	for _, r := range routes {
+		ipv4Addr := &netlink.Addr{
+			IPNet: r,
+		}
+		err = netlink.AddrAdd(link, ipv4Addr)
+		if err != nil {
+			return fmt.Errorf("failed to set peer address on %s interface: %s", name, err)
+		}
 	}
 
 	err = netlink.LinkSetUp(link)

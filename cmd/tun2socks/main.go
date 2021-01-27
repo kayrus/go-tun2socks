@@ -151,26 +151,20 @@ func main() {
 }
 
 func run() error {
-	tunGw, tunRoutes, err := routes.Get(*args.Routes, *args.Exclude, *args.TunAddr, *args.TunGw, *args.TunMask)
+	tunRoutes, err := routes.Get(*args.Routes, *args.Exclude)
 	if err != nil {
 		return fmt.Errorf("cannot parse config values: %v", err)
 	}
 
 	// Open the tun device.
 	dnsServers := strings.Split(*args.TunDns, ",")
-	tunDev, err := tun.OpenTunDevice(*args.TunName, *args.TunAddr, *args.TunGw, *args.TunMask, *args.TunMTU, dnsServers)
+	tunDev, err := tun.OpenTunDevice(*args.TunName, *args.TunMTU, tunRoutes, dnsServers)
 	if err != nil {
 		return fmt.Errorf("failed to open tun device: %v", err)
 	}
 
 	// close the tun device
 	defer tunDev.Close()
-
-	// unset routes on exit, when provided
-	defer routes.Unset(*args.TunName, tunGw, tunRoutes)
-
-	// set routes, when provided
-	routes.Set(*args.TunName, tunGw, tunRoutes)
 
 	if runtime.GOOS == "windows" && *args.BlockOutsideDns {
 		if err := blocker.BlockOutsideDns(*args.TunName); err != nil {

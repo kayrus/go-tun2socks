@@ -2,11 +2,12 @@ package tun
 
 import (
 	"io"
+	"net"
 
 	"golang.zx2c4.com/wireguard/tun"
 )
 
-func OpenTunDevice(name, addr, gw, mask string, mtu int, dnsServers []string) (io.ReadWriteCloser, error) {
+func OpenTunDevice(name string, mtu int, routes []*net.IPNet, dnsServers []string) (io.ReadWriteCloser, error) {
 	tunDev, err := tun.CreateTUN(name, mtu)
 	if err != nil {
 		return nil, err
@@ -17,5 +18,5 @@ func OpenTunDevice(name, addr, gw, mask string, mtu int, dnsServers []string) (i
 		return nil, err
 	}
 
-	return &tunnel{Device: tunDev}, setInterface(getName, addr, gw, mask, mtu, tunDev.(*tun.NativeTun))
+	return &tunnel{Device: tunDev}, setInterface(getName, mtu, tunDev.(*tun.NativeTun), routes)
 }

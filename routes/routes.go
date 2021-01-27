@@ -23,12 +23,7 @@ func getNet(v interface{}) *net.IPNet {
 	return nil
 }
 
-func Get(routes, excludeRoutes, addr, gw, mask string) (net.IP, []*net.IPNet, error) {
-	excludeAddrs, err := ParseAddresses(addr, gw, mask)
-	if err != nil {
-		return nil, nil, fmt.Errorf("invalid addresses: %v", err)
-	}
-
+func Get(routes, excludeRoutes string) ([]*net.IPNet, error) {
 	res := &netaddr.IPSet{}
 	for _, cidr := range strings.FieldsFunc(routes, splitFunc) {
 		if v := net.ParseIP(cidr).To4(); v != nil {
@@ -48,9 +43,9 @@ func Get(routes, excludeRoutes, addr, gw, mask string) (net.IP, []*net.IPNet, er
 				}
 				continue
 			} else {
-				return nil, nil, fmt.Errorf("failed to resolve %q: %v", cidr, err)
+				return nil, fmt.Errorf("failed to resolve %q: %v", cidr, err)
 			}
-			return nil, nil, fmt.Errorf("failed to parse %s CIDR: %v", cidr, err)
+			return nil, fmt.Errorf("failed to parse %s CIDR: %v", cidr, err)
 		}
 		res.InsertNet(v)
 	}
@@ -74,54 +69,13 @@ func Get(routes, excludeRoutes, addr, gw, mask string) (net.IP, []*net.IPNet, er
 				}
 				continue
 			} else {
-				return nil, nil, fmt.Errorf("failed to resolve %q: %v", cidr, err)
+				return nil, fmt.Errorf("failed to resolve %q: %v", cidr, err)
 			}
-			return nil, nil, fmt.Errorf("failed to parse %s CIDR: %v", cidr, err)
+			return nil, fmt.Errorf("failed to parse %s CIDR: %v", cidr, err)
 		}
 		log.Debugf("excluding %s from routes", v)
 		res.RemoveNet(v)
 	}
 
-	for _, cidr := range excludeAddrs {
-		res.RemoveNet(cidr)
-	}
-
-	gateway := excludeAddrs[1]
-	return gateway.IP, res.GetNetworks(), nil
-}
-
-func Set(name string, gw net.IP, routes []*net.IPNet) {
-	for _, cidr := range routes {
-		if err := routeAdd(cidr, gw, 0, name); err != nil {
-			log.Errorf("failed to set %s routes: %v", name, err)
-		}
-	}
-}
-
-func Unset(name string, gw net.IP, routes []*net.IPNet) {
-	for _, cidr := range routes {
-		if err := routeDel(cidr, gw, 0, name); err != nil {
-			log.Errorf("failed to unset %s routes: %v", name, err)
-		}
-	}
-}
-
-func ParseAddresses(addr, gw, mask string) ([]*net.IPNet, error) {
-	local := net.ParseIP(addr)
-	if local == nil {
-		return nil, fmt.Errorf("invalid local IP address")
-	}
-	remote := net.ParseIP(gw)
-	if remote == nil {
-		return nil, fmt.Errorf("invalid server IP address")
-	}
-	remoteMask := net.ParseIP(mask)
-	if remoteMask == nil {
-		return nil, fmt.Errorf("invalid server IP mask")
-	}
-
-	return []*net.IPNet{
-		getNet(local),
-		&net.IPNet{IP: remote, Mask: net.IPMask(remoteMask.To4())},
-	}, nil
+	return res.GetNetworks(), nil
 }
