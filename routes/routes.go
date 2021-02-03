@@ -33,6 +33,7 @@ func Get(routes, excludeRoutes, addr, gw, mask string) (net.IP, []*net.IPNet, er
 	for _, cidr := range strings.FieldsFunc(routes, splitFunc) {
 		if v := net.ParseIP(cidr).To4(); v != nil {
 			res.InsertNet(getNet(v))
+			log.Debugf("including %s (%s) to routes", cidr, v)
 			continue
 		}
 
@@ -52,6 +53,7 @@ func Get(routes, excludeRoutes, addr, gw, mask string) (net.IP, []*net.IPNet, er
 			}
 			return nil, nil, fmt.Errorf("failed to parse %s CIDR: %v", cidr, err)
 		}
+		log.Debugf("including %s (%s) to routes", cidr, v)
 		res.InsertNet(v)
 	}
 
