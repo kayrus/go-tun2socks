@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bufio"
 	"flag"
 	"fmt"
 	"io"
@@ -75,7 +76,7 @@ func (a *CmdArgs) addFlag(f cmdFlag) {
 	if fn, found := flagCreaters[f]; found && fn != nil {
 		fn()
 	} else {
-		log.Fatalf("unsupported flag")
+		fatal("unsupported flag")
 	}
 }
 
@@ -84,6 +85,22 @@ var args = new(CmdArgs)
 const (
 	maxMTU = 65535
 )
+
+func fatal(err interface{}) {
+	if runtime.GOOS == "windows" {
+		// Escalated privileges in windows opens a new terminal, and if there is an
+		// error, it is impossible to see it. Thus we wait for user to press a button.
+		log.Errorf("%s, press enter to exit", err)
+		bufio.NewReader(os.Stdin).ReadBytes('\n')
+		os.Exit(1)
+	}
+	switch err := err.(type) {
+	case error:
+		log.Fatalf(err.Error())
+	case string:
+		log.Fatalf(err)
+	}
+}
 
 func main() {
 	// linux and darwin pick up the tun index automatically
@@ -116,6 +133,10 @@ func main() {
 		os.Exit(0)
 	}
 
+	if err := checkPermissions(); err != nil {
+		fatal(err)
+	}
+
 	if *args.TunMTU > maxMTU {
 		fmt.Printf("MTU exceeds %d\n", maxMTU)
 		os.Exit(1)
@@ -146,7 +167,7 @@ func main() {
 
 	err := run()
 	if err != nil {
-		log.Fatalf("%v", err)
+		fatal(err)
 	}
 }
 
