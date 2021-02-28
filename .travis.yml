@@ -4,6 +4,9 @@ before_install:
       windows)
         export MAKE=mingw32-make
         ;;
+      freebsd)
+        export MAKE=gmake
+        ;;
       *)
         export MAKE=make
         ;;
@@ -11,18 +14,19 @@ before_install:
 dist: focal
 language: go
 go:
-- 1.15.x
-script:
-- $MAKE
+- 1.16.x
 branches:
   only:
-  - master
   - "/v\\d+\\.\\d+\\.\\d+/"
 matrix:
   include:
   - os: linux
+    arch: amd64
+  - os: linux
+    arch: arm64
   - os: osx
   - os: windows
+  - os: freebsd
 before_deploy:
 - $MAKE
 deploy:
