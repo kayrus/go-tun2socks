@@ -278,7 +278,7 @@ func (conn *tcpConn) Write(data []byte) (int, error) {
 				lwipMutex.Unlock()
 				return totalWritten, err
 			}
-			data = data[written:len(data)]
+			data = data[written:]
 		}
 		lwipMutex.Unlock()
 		if len(data) == 0 {

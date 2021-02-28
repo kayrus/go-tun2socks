@@ -35,10 +35,10 @@ func setInterface(name, addr, gw, mask string, mtu int, tun *tun.NativeTun) erro
 	if err != nil {
 		return fmt.Errorf("failed to set ip addr: %s: %s: %s", args, v, err)
 	}
-	        args = []string{
-                name,
-                "up",
-        }
+	args = []string{
+		name,
+		"up",
+	}
 	v, err = exec.Command("ifconfig", args...).CombinedOutput()
 	if err != nil {
 		return fmt.Errorf("failed to bring up interface: %s: %s: %s", args, v, err)
