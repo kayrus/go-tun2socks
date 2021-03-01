@@ -5,6 +5,7 @@ import (
 	"flag"
 	"fmt"
 	"io"
+	"net"
 	"os"
 	"os/signal"
 	"runtime"
@@ -12,17 +13,19 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/kayrus/tuncfg/log"
+	_ "github.com/kayrus/tuncfg/log/simple" // Register a simple logger.
+	"github.com/kayrus/tuncfg/resolv"
+	"github.com/kayrus/tuncfg/route"
+	"github.com/kayrus/tuncfg/tun"
+
 	"github.com/eycorsican/go-tun2socks/common/dns/blocker"
-	"github.com/eycorsican/go-tun2socks/common/log"
-	_ "github.com/eycorsican/go-tun2socks/common/log/simple" // Register a simple logger.
 	"github.com/eycorsican/go-tun2socks/core"
-	"github.com/eycorsican/go-tun2socks/routes"
-	"github.com/eycorsican/go-tun2socks/tun"
 )
 
 var version = "undefined"
 
-var handlerCreater = make(map[string]func(), 0)
+var handlerCreater = make(map[string]func())
 
 func registerHandlerCreater(name string, creater func()) {
 	handlerCreater[name] = creater
@@ -80,12 +83,6 @@ func (a *CmdArgs) addFlag(f cmdFlag) {
 	}
 }
 
-var args = new(CmdArgs)
-
-const (
-	maxMTU = 65535
-)
-
 func fatal(err interface{}) {
 	if runtime.GOOS == "windows" {
 		// Escalated privileges in windows opens a new terminal, and if there is an
@@ -102,6 +99,16 @@ func fatal(err interface{}) {
 	}
 }
 
+func splitFunc(c rune) bool {
+	return c == ',' || c == ' '
+}
+
+var args = new(CmdArgs)
+
+const (
+	maxMTU = 65535
+)
+
 func main() {
 	// linux and darwin pick up the tun index automatically
 	// windows requires the exact tun name
@@ -110,7 +117,7 @@ func main() {
 	case "darwin":
 		defaultTunName = "utun"
 	case "windows":
-		defaultTunName = "socks2tun"
+		defaultTunName = "tun2socks"
 	}
 	args.TunName = flag.String("tunName", defaultTunName, "TUN interface name")
 
@@ -118,7 +125,7 @@ func main() {
 	args.TunAddr = flag.String("tunAddr", "10.255.0.2", "TUN interface address")
 	args.TunGw = flag.String("tunGw", "10.255.0.1", "TUN interface gateway")
 	args.TunMask = flag.String("tunMask", "255.255.255.255", "TUN interface netmask, it should be a prefixlen (a number) for IPv6 address")
-	args.TunDns = flag.String("tunDns", "8.8.8.8,8.8.4.4", "DNS resolvers for TUN interface (only need on Windows)")
+	args.TunDns = flag.String("tunDns", "", "DNS resolvers for TUN interface (only need on Windows)")
 	args.TunMTU = flag.Int("tunMTU", 1300, "TUN interface MTU")
 	args.BlockOutsideDns = flag.Bool("blockOutsideDns", false, "Prevent DNS leaks by blocking plaintext DNS queries going out through non-TUN interface (may require admin privileges) (Windows only) ")
 	args.ProxyType = flag.String("proxyType", "socks", "Proxy handler type")
@@ -162,7 +169,7 @@ func main() {
 	case "none":
 		log.SetLevel(log.NONE)
 	default:
-		panic("unsupport logging level")
+		fatal(fmt.Errorf("unsupport logging level"))
 	}
 
 	err := run()
@@ -171,27 +178,89 @@ func main() {
 	}
 }
 
+func parseAddresses(localAddr, netMask, nextHop string) (*net.IPNet, *net.IPNet, error) {
+	local := net.ParseIP(localAddr)
+	if local == nil {
+		return nil, nil, fmt.Errorf("invalid local IP address")
+	}
+
+	mask := net.ParseIP(netMask)
+	if mask == nil {
+		return nil, nil, fmt.Errorf("invalid local IP mask")
+	}
+
+	gw := net.ParseIP(nextHop)
+	if gw == nil {
+		return nil, nil, fmt.Errorf("invalid gateway IP address")
+	}
+
+	loc := &net.IPNet{
+		IP:   local.To4(),
+		Mask: net.IPMask(mask.To4()),
+	}
+	rem := &net.IPNet{
+		IP:   gw.To4(),
+		Mask: net.CIDRMask(32, 32),
+	}
+
+	return loc, rem, nil
+}
+
 func run() error {
-	tunGw, tunRoutes, err := routes.Get(*args.Routes, *args.Exclude, *args.TunAddr, *args.TunGw, *args.TunMask)
+	local, gw, err := parseAddresses(*args.TunAddr, *args.TunMask, *args.TunGw)
+	if err != nil {
+		return err
+	}
+
+	tunRoutes, err := route.Build(local, gw, *args.Routes, *args.Exclude)
 	if err != nil {
 		return fmt.Errorf("cannot parse config values: %v", err)
 	}
 
+	var dnsServers []net.IP
+	for _, v := range strings.FieldsFunc(*args.TunDns, splitFunc) {
+		if v := net.ParseIP(v); v != nil {
+			if v := v.To4(); v != nil {
+				dnsServers = append(dnsServers, v)
+			}
+		}
+	}
+
 	// Open the tun device.
-	dnsServers := strings.Split(*args.TunDns, ",")
-	tunDev, err := tun.OpenTunDevice(*args.TunName, *args.TunAddr, *args.TunGw, *args.TunMask, *args.TunMTU, dnsServers)
+	tunDev, err := tun.OpenTunDevice(local, gw, *args.TunName, *args.TunMTU)
 	if err != nil {
 		return fmt.Errorf("failed to open tun device: %v", err)
 	}
+	name, err := tunDev.Name()
+	if err != nil {
+		return fmt.Errorf("failed to get tun name: %v", err)
+	}
+
+	// configure DNS
+	resolv, err := resolv.New(name, dnsServers, nil, false)
+	if err != nil {
+		return fmt.Errorf("failed to create tun device DNS handler: %v", err)
+	}
+	err = resolv.Set()
+	if err != nil {
+		return fmt.Errorf("failed manage tun device DNS options: %v", err)
+	}
+
+	defer resolv.Restore()
 
 	// close the tun device
 	defer tunDev.Close()
 
+	routes, err := route.New(name, tunRoutes, gw.IP, 0)
+	if err != nil {
+		return err
+	}
+
 	// unset routes on exit, when provided
-	defer routes.Unset(*args.TunName, tunGw, tunRoutes)
+	defer routes.Del()
 
 	// set routes, when provided
-	routes.Set(*args.TunName, tunGw, tunRoutes)
+	routes.Add()
 
 	if runtime.GOOS == "windows" && *args.BlockOutsideDns {
 		if err := blocker.BlockOutsideDns(*args.TunName); err != nil {
@@ -218,23 +287,24 @@ func run() error {
 		}
 	}
 
+	var tunRW io.ReadWriter = &tun.Tunnel{NativeTun: tunDev}
+
 	// Register an output callback to write packets output from lwip stack to tun
 	// device, output function should be set before input any packets.
 	core.RegisterOutputFn(func(data []byte) (int, error) {
-		return tunDev.Write(data)
+		return tunRW.Write(data)
 	})
 
 	// Copy packets from tun device to lwip stack, it's the main loop.
 	errChan := make(chan error, 1)
 	go func() {
-		_, err := io.CopyBuffer(lwipWriter, tunDev, make([]byte, maxMTU))
+		_, err := io.CopyBuffer(lwipWriter, tunRW, make([]byte, *args.TunMTU+tun.Offset))
 		if err != nil {
 			errChan <- fmt.Errorf("copying data failed: %v", err)
 		}
 	}()
 
 	log.Infof("Running tun2socks")
-
 	osSignals := make(chan os.Signal, 1)
 	signal.Notify(osSignals, os.Interrupt, os.Kill, syscall.SIGTERM, syscall.SIGHUP)
 

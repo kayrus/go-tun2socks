@@ -8,9 +8,8 @@ import (
 	"net"
 	"unsafe"
 
+	"github.com/kayrus/tuncfg/log"
 	"golang.org/x/sys/windows"
-
-	"github.com/eycorsican/go-tun2socks/common/log"
 )
 
 func BlockOutsideDns(tunName string) error {

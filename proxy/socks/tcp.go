@@ -5,9 +5,9 @@ import (
 	"net"
 	"sync"
 
+	"github.com/kayrus/tuncfg/log"
 	"golang.org/x/net/proxy"
 
-	"github.com/eycorsican/go-tun2socks/common/log"
 	"github.com/eycorsican/go-tun2socks/core"
 )
 

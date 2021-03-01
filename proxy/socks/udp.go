@@ -8,7 +8,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/eycorsican/go-tun2socks/common/log"
+	"github.com/kayrus/tuncfg/log"
+
 	"github.com/eycorsican/go-tun2socks/core"
 )
 

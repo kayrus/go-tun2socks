@@ -9,7 +9,7 @@ BUILDDIR=$(shell pwd)/build
 CMDDIR=$(shell pwd)/cmd/tun2socks
 PROGRAM=tun2socks
 GOOS:=$(strip $(shell go env GOOS))
-GOARCH:=$(strip $(shell go env GOARCH))
+GOARCHs:=$(strip $(shell go env GOARCH))
 
 ifeq "$(GOOS)" "windows"
 SUFFIX=.exe
@@ -20,7 +20,7 @@ endif
 all: fmt build
 
 build:
-	$(GOBUILD) -ldflags $(RELEASE_LDFLAGS) -o $(BUILDDIR)/$(PROGRAM)_$(GOOS)_$(GOARCH)$(SUFFIX) -v -tags '$(BUILD_TAGS)' $(CMDDIR)
+	$(foreach GOARCH,$(GOARCHs),$(shell GOARCH=$(GOARCH) $(GOBUILD) -ldflags $(RELEASE_LDFLAGS) -o $(BUILDDIR)/$(PROGRAM)_$(GOOS)_$(GOARCH)$(SUFFIX) -v -tags '$(BUILD_TAGS)' $(CMDDIR)))
 
 fmt:
 	gofmt -w -s .
