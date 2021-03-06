@@ -251,7 +251,13 @@ func run() error {
 	// close the tun device
 	defer tunDev.Close()
 
-	routes, err := route.New(name, tunRoutes, gw.IP, 0)
+	var hop net.IP
+	if runtime.GOOS == "windows" {
+		// windows requires both gateway and interface name
+		hop = gw.IP
+	}
+
+	routes, err := route.New(name, tunRoutes, hop, 0)
 	if err != nil {
 		return err
 	}
