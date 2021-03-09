@@ -37,7 +37,10 @@ type lwipStack struct {
 
 // NewLWIPStack listens for any incoming connections/packets and registers
 // corresponding accept/recv callback functions.
-func NewLWIPStack() LWIPStack {
+func NewLWIPStack(mtu int) LWIPStack {
+	// Set MTU.
+	C.netif_list.mtu = C.ushort(mtu)
+
 	tcpPCB := C.tcp_new()
 	if tcpPCB == nil {
 		panic("tcp_new return nil")
@@ -164,7 +167,4 @@ func init() {
 	// Now the loop interface is just the first element in
 	// `C.netif_list`, i.e. `*C.netif_list`.
 	lwipInit()
-
-	// Set MTU.
-	C.netif_list.mtu = 1500
 }
