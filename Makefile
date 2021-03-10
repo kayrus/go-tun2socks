@@ -20,7 +20,7 @@ endif
 all: fmt build
 
 build:
-	$(foreach GOARCH,$(GOARCHs),$(shell GOARCH=$(GOARCH) $(GOBUILD) -ldflags $(RELEASE_LDFLAGS) -o $(BUILDDIR)/$(PROGRAM)_$(GOOS)_$(GOARCH)$(SUFFIX) -v -tags '$(BUILD_TAGS)' $(CMDDIR)))
+	$(foreach GOARCH,$(GOARCHs),$(shell GOARCH=$(GOARCH) $(GOBUILD) -ldflags $(RELEASE_LDFLAGS) -trimpath -o $(BUILDDIR)/$(PROGRAM)_$(GOOS)_$(GOARCH)$(SUFFIX) -v -tags '$(BUILD_TAGS)' $(CMDDIR)))
 
 fmt:
 	gofmt -w -s .
