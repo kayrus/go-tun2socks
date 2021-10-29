@@ -5,8 +5,8 @@ VERSION=$(shell git describe --tags)
 DEBUG_LDFLAGS=''
 RELEASE_LDFLAGS='-s -w -X main.version=$(VERSION)'
 BUILD_TAGS?=socks
-BUILDDIR=$(shell pwd)/build
-CMDDIR=$(shell pwd)/cmd/tun2socks
+BUILDDIR=./build
+CMDDIR=./cmd/tun2socks
 PROGRAM=tun2socks
 GOOS:=$(strip $(shell go env GOOS))
 GOARCHs:=$(strip $(shell go env GOARCH))
@@ -23,7 +23,7 @@ build:
 	$(foreach GOARCH,$(GOARCHs),$(shell GOARCH=$(GOARCH) $(GOBUILD) -ldflags $(RELEASE_LDFLAGS) -trimpath -o $(BUILDDIR)/$(PROGRAM)_$(GOOS)_$(GOARCH)$(SUFFIX) -v -tags '$(BUILD_TAGS)' $(CMDDIR)))
 
 fmt:
-	gofmt -w -s .
+	gofmt -w -s cmd core common proxy
 
 clean:
 	rm -rf $(BUILDDIR)

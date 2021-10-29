@@ -1,3 +1,4 @@
+//go:build dnsfallback
 // +build dnsfallback
 
 package main

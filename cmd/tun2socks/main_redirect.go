@@ -1,3 +1,4 @@
+//go:build redirect
 // +build redirect
 
 package main
