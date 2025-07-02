@@ -1,6 +1,6 @@
 module github.com/eycorsican/go-tun2socks
 
-go 1.23.0
+go 1.24
 
 require (
 	github.com/kayrus/tuncfg v0.0.0-20211029100448-15eab7b00382
