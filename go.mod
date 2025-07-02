@@ -1,11 +1,11 @@
 module github.com/eycorsican/go-tun2socks
 
-go 1.17
+go 1.23.0
 
 require (
 	github.com/kayrus/tuncfg v0.0.0-20211029100448-15eab7b00382
-	golang.org/x/net v0.0.0-20211020060615-d418f374d309
-	golang.org/x/sys v0.1.0
+	golang.org/x/net v0.38.0
+	golang.org/x/sys v0.31.0
 )
 
 require (
